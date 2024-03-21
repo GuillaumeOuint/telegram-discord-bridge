@@ -108,11 +108,8 @@ func (b *Bot) memberJoinded(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 		}
 	}
 	channelId := ""
-	for i, _ := range b.Channels {
+	for i := range b.Channels {
 		channelId = i
-		if err != nil {
-			panic(err)
-		}
 		break
 	}
 	message := types.Message{
