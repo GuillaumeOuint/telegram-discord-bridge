@@ -1,7 +1,7 @@
 github.com/Lakhtiste/telegram-bot-api v0.0.0-20240320054535-151f5192fbb4 h1:jYiQL6oS/0VSxz70tjohzlWFeWYPY+Y31pRKwIeE/VI=
 github.com/Lakhtiste/telegram-bot-api v0.0.0-20240320054535-151f5192fbb4/go.mod h1:xaBlbmDjk6InLqc2QhPA0Ib/z9s31K9br87nwUo4Z5E=
-github.com/bwmarrin/discordgo v0.27.1 h1:ib9AIc/dom1E/fSIulrBwnez0CToJE113ZGt4HoliGY=
-github.com/bwmarrin/discordgo v0.27.1/go.mod h1:NJZpH+1AfhIcyQsPeuBKsUtYrRnjkyu0kIVMCHkZtRY=
+github.com/bwmarrin/discordgo v0.27.2-0.20240315152229-33ee38cbf271 h1:BuDtVy29wfi7XFRYUP2c65EJuMWWNCWhkiP+jYIU4eY=
+github.com/bwmarrin/discordgo v0.27.2-0.20240315152229-33ee38cbf271/go.mod h1:NJZpH+1AfhIcyQsPeuBKsUtYrRnjkyu0kIVMCHkZtRY=
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
