@@ -58,6 +58,7 @@ func (b *Bot) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if displayName == "" {
 				displayName = m.Author.GlobalName
 			}
+			break
 		}
 	}
 
@@ -103,6 +104,7 @@ func (b *Bot) memberJoinded(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 			if displayName == "" {
 				displayName = m.User.GlobalName
 			}
+			break
 		}
 	}
 	channelId := ""
