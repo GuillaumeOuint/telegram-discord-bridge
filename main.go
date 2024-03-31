@@ -29,11 +29,21 @@ func main() {
 		case message := <-discordMessages:
 			fmt.Printf("Received discord message: %v\n", message)
 			messageDB.AddMessage(message)
-			go telegramBot.SendMessage(message)
+			go func() {
+				err := telegramBot.SendMessage(message)
+				if err != nil {
+					fmt.Printf("Error sending message to telegram: %v\n", err)
+				}
+			}()
 		case message := <-telegramMessages:
 			fmt.Printf("Received telegram message: %v\n", message)
 			messageDB.AddMessage(message)
-			go discordBot.SendMessage(message)
+			go func() {
+				err := discordBot.SendMessage(message)
+				if err != nil {
+					fmt.Printf("Error sending message to discord: %v\n", err)
+				}
+			}()
 		}
 	}
 }

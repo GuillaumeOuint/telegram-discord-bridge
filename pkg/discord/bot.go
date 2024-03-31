@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -123,7 +124,7 @@ func (b *Bot) memberJoinded(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	b.Events <- &message
 }
 
-func (b *Bot) SendMessage(message *types.Message) {
+func (b *Bot) SendMessage(message *types.Message) error {
 	discordChannel := b.Channels[message.Channel]
 	if discordChannel == "" {
 		for _, v := range b.Channels {
@@ -143,7 +144,7 @@ func (b *Bot) SendMessage(message *types.Message) {
 			if m.TelegramMessageID == message.ReplyTo {
 				r, err := strconv.Atoi(m.DiscordMessageID)
 				if err != nil {
-					panic(err)
+					return err
 				}
 				discordMessageID = r
 				guildID = m.DiscordGuildID
@@ -165,7 +166,7 @@ func (b *Bot) SendMessage(message *types.Message) {
 			// download the image
 			image, err := http.DefaultClient.Get(imag.URL)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			defer image.Body.Close()
 			// add the image to the message
@@ -177,11 +178,12 @@ func (b *Bot) SendMessage(message *types.Message) {
 		}
 	}
 	if message.Content == "" {
-		return
+		return errors.New("empty message")
 	}
 	sent, err := b.bot.ChannelMessageSendComplex(discordChannel, messageoption)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	message.DiscordMessageID = sent.ID
+	return nil
 }

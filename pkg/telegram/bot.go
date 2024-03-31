@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -80,18 +81,18 @@ func (b *Bot) Start() {
 	}
 }
 
-func (b *Bot) SendMessage(message *types.Message) {
+func (b *Bot) SendMessage(message *types.Message) error {
 	if telegramChannel := b.Channels[message.Channel]; telegramChannel != "" {
 		msgStr := fmt.Sprintf("%s: %s", message.Username, message.Content)
 		channelSplit := strings.Split(telegramChannel, "_")
 		chatID, err := strconv.ParseInt(channelSplit[0], 10, 64)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		msg := tgbotapi.NewMessage(chatID, msgStr)
 		i64, err := strconv.ParseInt(channelSplit[1], 10, 8)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if i64 != 1 && i64 != 0 {
 			msg.MessageThreadID = int(i64)
@@ -102,7 +103,7 @@ func (b *Bot) SendMessage(message *types.Message) {
 				if m.DiscordMessageID == message.ReplyTo {
 					telegramMessageID, err = strconv.Atoi(m.TelegramMessageID)
 					if err != nil {
-						panic(err)
+						return err
 					}
 					break
 				}
@@ -116,12 +117,12 @@ func (b *Bot) SendMessage(message *types.Message) {
 				// add image to msg
 				img, err := http.DefaultClient.Get(image.URL)
 				if err != nil {
-					panic(err)
+					return err
 				}
 				defer img.Body.Close()
 				byt, err := io.ReadAll(img.Body)
 				if err != nil {
-					panic(err)
+					return err
 				}
 				file := tgbotapi.FileBytes{
 					Name:  "photo",
@@ -134,26 +135,26 @@ func (b *Bot) SendMessage(message *types.Message) {
 				}
 				resp, err := b.bot.Request(msgi)
 				if err != nil {
-					panic(err)
+					return err
 				}
 
 				var mess tgbotapi.Message
 				err = json.Unmarshal(resp.Result, &mess)
 				if err != nil {
-					panic(err)
+					return err
 				}
 				message.TelegramMessageID = strconv.Itoa(mess.MessageID)
 			}
-			return
+			return nil
 		}
 		if message.Content == "" {
-			return
+			return errors.New("empty message content")
 		}
 		sent, err := b.bot.Send(msg)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		message.TelegramMessageID = strconv.Itoa(sent.MessageID)
 	}
-
+	return nil
 }
