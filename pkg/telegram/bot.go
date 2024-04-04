@@ -45,6 +45,7 @@ func (b *Bot) Start() {
 			if !update.Message.Chat.IsForum {
 				continue
 			}
+
 			if update.Message.MessageThreadID == 0 {
 				update.Message.MessageThreadID = 1
 			}
@@ -90,7 +91,7 @@ func (b *Bot) SendMessage(message *types.Message) error {
 			return err
 		}
 		msg := tgbotapi.NewMessage(chatID, msgStr)
-		i64, err := strconv.ParseInt(channelSplit[1], 10, 8)
+		i64, err := strconv.ParseInt(channelSplit[1], 10, 64)
 		if err != nil {
 			return err
 		}
