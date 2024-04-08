@@ -67,9 +67,14 @@ func (b *Bot) Start() {
 					if err != nil {
 						panic(err)
 					}
+					name := update.Message.Photo[3].FileID
+					// if name doesn't contain the extension, add it
+					if !strings.Contains(name, ".") {
+						name += ".jpg"
+					}
 					message.Attachments = append(message.Attachments, types.Attachement{
 						URL:  url,
-						Name: update.Message.Photo[3].FileID,
+						Name: name,
 					})
 				}
 				message.Content = update.Message.Caption
