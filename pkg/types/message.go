@@ -17,6 +17,7 @@ type Message struct {
 }
 
 type Attachement struct {
-	URL  string
-	Name string
+	URL   string
+	Name  string
+	Voice bool
 }

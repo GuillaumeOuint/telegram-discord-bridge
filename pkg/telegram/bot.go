@@ -12,6 +12,7 @@ import (
 
 	"github.com/GuillaumeOuint/telegram-discord-bridge/pkg/db"
 	"github.com/GuillaumeOuint/telegram-discord-bridge/pkg/types"
+	"github.com/GuillaumeOuint/telegram-discord-bridge/pkg/util"
 
 	tgbotapi "github.com/Lakhtiste/telegram-bot-api"
 )
@@ -57,15 +58,18 @@ func (b *Bot) Start() {
 				Date:              update.Message.Time(),
 			}
 			if update.Message.ReplyToMessage != nil {
-				message.IsReply = true
-				message.ReplyTo = fmt.Sprintf("%v", update.Message.ReplyToMessage.MessageID)
+				if update.Message.ReplyToMessage.MessageID != update.Message.MessageThreadID {
+					message.IsReply = true
+					message.ReplyTo = fmt.Sprintf("%v", update.Message.ReplyToMessage.MessageID)
+				}
 			}
 			if update.Message.Photo != nil {
 				message.Attachment = true
-				if update.Message.Photo[3].FileID != "" {
-					url, err := b.bot.GetFileDirectURL(update.Message.Photo[3].FileID)
+				if update.Message.Photo[len(update.Message.Photo)-1].FileID != "" {
+					url, err := b.bot.GetFileDirectURL(update.Message.Photo[len(update.Message.Photo)-1].FileID)
 					if err != nil {
-						panic(err)
+						fmt.Println(err)
+						break
 					}
 					name := update.Message.Photo[3].FileID
 					// if name doesn't contain the extension, add it
@@ -74,7 +78,38 @@ func (b *Bot) Start() {
 					}
 					message.Attachments = append(message.Attachments, types.Attachement{
 						URL:  url,
-						Name: name,
+						Name: update.Message.Photo[len(update.Message.Photo)-1].FileID,
+					})
+				}
+				message.Content = update.Message.Caption
+			}
+			if update.Message.Audio != nil {
+				message.Attachment = true
+				if update.Message.Audio.FileID != "" {
+					url, err := b.bot.GetFileDirectURL(update.Message.Audio.FileID)
+					if err != nil {
+						fmt.Println(err)
+						break
+					}
+					message.Attachments = append(message.Attachments, types.Attachement{
+						URL:  url,
+						Name: update.Message.Audio.FileID,
+					})
+				}
+				message.Content = update.Message.Caption
+			}
+			if update.Message.Voice != nil {
+				message.Attachment = true
+				if update.Message.Voice.FileID != "" {
+					url, err := b.bot.GetFileDirectURL(update.Message.Voice.FileID)
+					if err != nil {
+						fmt.Println(err)
+						break
+					}
+					message.Attachments = append(message.Attachments, types.Attachement{
+						URL:   url,
+						Name:  update.Message.Voice.FileID,
+						Voice: true,
 					})
 				}
 				message.Content = update.Message.Caption
@@ -119,6 +154,7 @@ func (b *Bot) SendMessage(message *types.Message) error {
 			}
 		}
 		if message.Attachment {
+			var ipp []interface{}
 			for _, image := range message.Attachments {
 				// add image to msg
 				img, err := http.DefaultClient.Get(image.URL)
@@ -131,29 +167,77 @@ func (b *Bot) SendMessage(message *types.Message) error {
 					return err
 				}
 				file := tgbotapi.FileBytes{
-					Name:  "photo",
 					Bytes: byt,
 				}
-				ip := tgbotapi.NewInputMediaPhoto(file)
-				msgi := tgbotapi.NewMediaGroup(chatID, []interface{}{ip})
-				if msg.MessageThreadID != 1 && msg.MessageThreadID != 0 {
-					msgi.BaseChat.MessageThreadID = msg.MessageThreadID
+				mimedetected := http.DetectContentType(byt)
+				var mime util.Mime
+				for _, v := range util.MimeArray {
+					if mimedetected == string(v) {
+						mime = v
+						break
+					}
 				}
-				resp, err := b.bot.Request(msgi)
-				if err != nil {
-					return err
+				if mime == "" {
+					mime = util.MimeOctetStream
 				}
+				if mime != util.MimeOctetStream {
+					extension := util.MimeExtensionMap[mime]
 
-				var mess tgbotapi.Message
-				err = json.Unmarshal(resp.Result, &mess)
-				if err != nil {
-					return err
+					currentextension := strings.Split(image.Name, ".")
+					if len(currentextension) == 0 {
+						image.Name = image.Name + "." + string(extension)
+					} else {
+						if currentextension[len(currentextension)-1] != string(extension) {
+							image.Name = image.Name + "." + string(extension)
+						}
+					}
 				}
-				message.TelegramMessageID = strconv.Itoa(mess.MessageID)
+				file.Name = image.Name
+				var ip interface{}
+				if mime == util.MimeImageJPEG || mime == util.MimeImagePNG || mime == util.MimeImageGIF || mime == util.MimeImageBMP || mime == util.MimeImageSVG {
+					ip = tgbotapi.NewInputMediaPhoto(file)
+				} else if mime == util.MimeAudioMPEG || mime == util.MimeAudioOGG || mime == util.MimeAudioWAV {
+					ip = tgbotapi.NewInputMediaAudio(file)
+				} else if mime == util.MimeVideoMPEG || mime == util.MimeVideoMP4 || mime == util.MimeVideoOGG || mime == util.MimeVideoQuickTime {
+					ip = tgbotapi.NewInputMediaVideo(file)
+				} else {
+					ip = tgbotapi.NewInputMediaDocument(file)
+				}
+				ipp = append(ipp, ip)
+			}
+			msgi := tgbotapi.NewMediaGroup(chatID, ipp)
+			if msg.MessageThreadID != 1 && msg.MessageThreadID != 0 {
+				msgi.BaseChat.MessageThreadID = msg.MessageThreadID
+			}
+			resp, err := b.bot.Request(msgi)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(resp.Result))
+			var mess []tgbotapi.Message
+			err = json.Unmarshal(resp.Result, &mess)
+			if err != nil {
+				return err
+			}
+			message.TelegramMessageID = strconv.Itoa(mess[0].MessageID)
+			editEvent := tgbotapi.EditMessageCaptionConfig{
+				BaseEdit: tgbotapi.BaseEdit{
+					BaseChatMessage: tgbotapi.BaseChatMessage{
+						MessageID: mess[0].MessageID,
+						ChatConfig: tgbotapi.ChatConfig{
+							ChatID: chatID,
+						},
+					},
+				},
+				Caption: msgStr,
+			}
+			_, err = b.bot.Send(editEvent)
+			if err != nil {
+				return err
 			}
 			return nil
 		}
-		if message.Content == "" {
+		if message.Content == "" && len(message.Attachments) == 0 {
 			return errors.New("empty message content")
 		}
 		sent, err := b.bot.Send(msg)

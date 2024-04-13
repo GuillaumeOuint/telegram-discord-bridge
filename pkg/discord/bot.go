@@ -1,15 +1,19 @@
 package discord
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GuillaumeOuint/telegram-discord-bridge/pkg/db"
 	"github.com/GuillaumeOuint/telegram-discord-bridge/pkg/types"
+	"github.com/GuillaumeOuint/telegram-discord-bridge/pkg/util"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -169,15 +173,45 @@ func (b *Bot) SendMessage(message *types.Message) error {
 				return err
 			}
 			defer image.Body.Close()
-			// add the image to the message
+			data, err := io.ReadAll(image.Body)
+			if err != nil {
+				return err
+			}
+			mimedetected := http.DetectContentType(data)
+			var mime util.Mime
+			for _, v := range util.MimeArray {
+				if mimedetected == string(v) {
+					mime = v
+					break
+				}
+			}
+			if mime == "" {
+				mime = util.MimeOctetStream
+			}
+			if imag.Voice {
+				mime = util.MimeAudioOGG
+			}
+			if mime != util.MimeOctetStream {
+				extension := util.MimeExtensionMap[mime]
 
+				currentextension := strings.Split(imag.Name, ".")
+				if len(currentextension) == 0 {
+					imag.Name = imag.Name + "." + string(extension)
+				} else {
+					if currentextension[len(currentextension)-1] != string(extension) {
+						imag.Name = imag.Name + "." + string(extension)
+					}
+				}
+			}
+
+			finimage := io.NopCloser(io.Reader(io.MultiReader(bytes.NewReader(data))))
 			messageoption.Files = append(messageoption.Files, &discordgo.File{
 				Name:   imag.Name,
-				Reader: image.Body,
+				Reader: finimage,
 			})
 		}
 	}
-	if message.Content == "" {
+	if messageoption.Content == "" && len(messageoption.Files) == 0 {
 		return errors.New("empty message")
 	}
 	sent, err := b.bot.ChannelMessageSendComplex(discordChannel, messageoption)

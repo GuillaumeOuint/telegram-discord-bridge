@@ -27,7 +27,7 @@ func main() {
 	for {
 		select {
 		case message := <-discordMessages:
-			fmt.Printf("Received discord message: %v\n", message)
+			fmt.Printf("Received discord message: %#v\n", message)
 			messageDB.AddMessage(message)
 			go func() {
 				err := telegramBot.SendMessage(message)
@@ -36,7 +36,7 @@ func main() {
 				}
 			}()
 		case message := <-telegramMessages:
-			fmt.Printf("Received telegram message: %v\n", message)
+			fmt.Printf("Received telegram message: %#v\n", message)
 			messageDB.AddMessage(message)
 			go func() {
 				err := discordBot.SendMessage(message)

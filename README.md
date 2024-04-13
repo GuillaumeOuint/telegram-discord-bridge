@@ -7,6 +7,8 @@ Features:
 - [x] Bridge simple messages
 - [x] Bridge reply
 - [x] Bridge images
-- [ ] Bridge join event
+- [x] Bridge video
+- [x] Bridge audio
+- [x] Bridge join event (Only discord -> telegram for now)
 - [ ] Bridge message edit
 - [ ] Bridge message delete
