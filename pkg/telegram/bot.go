@@ -114,6 +114,21 @@ func (b *Bot) Start() {
 				}
 				message.Content = update.Message.Caption
 			}
+			if update.Message.Video != nil {
+				message.Attachment = true
+				if update.Message.Video.FileID != "" {
+					url, err := b.bot.GetFileDirectURL(update.Message.Video.FileID)
+					if err != nil {
+						fmt.Println(err)
+						break
+					}
+					message.Attachments = append(message.Attachments, types.Attachement{
+						URL:  url,
+						Name: update.Message.Video.FileID,
+					})
+				}
+				message.Content = update.Message.Caption
+			}
 			if update.Message.NewChatMembers != nil {
 				message.Content = "a rejoint le groupe"
 			}
